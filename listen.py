@@ -57,7 +57,7 @@ def setup(browser):
     try:
         WebDriverWait(browser, 10).until(lambda x: x.find_element(By.ID, 'page_topbar'))
     except TimeoutException:
-        print('Looks like either your credentials are wrong or we\'ve hit a captcha, check credentials or try again later.')
+        print('Looks like either your credentials are wrong or we\'ve hit a captcha, check credentials in cred.json or try again later.')
         terminate(browser)
     
 
