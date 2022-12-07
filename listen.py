@@ -5,13 +5,20 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.common.exceptions import TimeoutException
 import json
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument('-play', '--PLAY_DURATION', help = 'Duration in seconds to play playlist before pausing', type=int, default = -1)
+parser.add_argument('-pause', '--PAUSE_DURATION', help = 'Duration in seconds to pause playlist after playing', type=int, default = -1)
+parser.add_argument('-repeat', '--REPEAT', help = 'Number of times to repeat play pause cycle', type=int, default = -1)
+args = parser.parse_args()
 
 # -1 Play duration: Infinite play
-PLAY_DURATION = -1
+PLAY_DURATION = args.PLAY_DURATION
 # -1 Play once per day, ignored if PLAY_DURATION = -1
-PAUSE_DURATION = -1
+PAUSE_DURATION = args.PAUSE_DURATION
 # Times to repeat, -1 = infinite repeat
-REPEAT = -1
+REPEAT = args.REPEAT
 
 def get_webdriver():
     """
@@ -22,7 +29,7 @@ def get_webdriver():
     # Mute browser
     options.set_preference("media.volume_scale", "0.0")
     # No visible browser
-    options.headless = True
+    # options.headless = True
     return webdriver.Firefox(options=options)
 
     # Use chrome instead of firefox
@@ -59,9 +66,10 @@ def setup(browser):
     except TimeoutException:
         print('Looks like either your credentials are wrong or we\'ve hit a captcha, check credentials in cred.json or try again later.')
         terminate(browser)
-    
 
+    print('Logged in')
     browser.get(credentials['playlist-link'])
+    print('Got playlist')
 
     try:
         close_popup = WebDriverWait(browser, 10).until(lambda x: x.find_element(By.ID, 'modal-close'))
@@ -96,6 +104,7 @@ def play_tracks(browser):
     # browser.find_element(By.CSS_SELECTOR, "[data-testid='volume-unmute']").click()
 
     browser.execute_script("arguments[0].click()", play_button)
+    print('Playing')
 
 def play(browser):
     """
@@ -114,7 +123,7 @@ def pause(browser):
     browser.execute_script("arguments[0].click()", play_button)
 
 def terminate(browser):
-    print('Exiting')
+    print('\nExiting')
     browser.quit()
     exit()
 
@@ -126,20 +135,22 @@ def playing_loop(browser):
                 if wait.lower().strip() == 'exit':
                     terminate(browser)
             except:
-                browser.quit()
                 terminate(browser)
     else:
-        play_counter = 0
-        if PAUSE_DURATION == -1:
-            PAUSE_DURATION = 24*60*60 - PLAY_DURATION
-        while True:
-            time.sleep(PLAY_DURATION)
-            pause(browser)
-            time.sleep(PAUSE_DURATION)
-            play(browser)
-            play_counter += 1
-            if (REPEAT != -1) and (play_counter >= REPEAT):
-                terminate(browser)
+        try:
+            play_counter = 0
+            if PAUSE_DURATION == -1:
+                PAUSE_DURATION = 24*60*60 - PLAY_DURATION
+            while True:
+                time.sleep(PLAY_DURATION)
+                pause(browser)
+                time.sleep(PAUSE_DURATION)
+                play(browser)
+                play_counter += 1
+                if (REPEAT != -1) and (play_counter >= REPEAT):
+                    terminate(browser)
+        except:
+            terminate()
                 
 
 
